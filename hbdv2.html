@@ -1,0 +1,61 @@
+/* ---------- YOUTUBE: muted autoplay + unmute on first gesture ---------- */
+window.onYouTubeIframeAPIReady = function () {
+  ytPlayer = new YT.Player('ytHost', {
+    height: '2',
+    width: '2',
+    videoId: YT_VIDEO_ID,
+    playerVars: {
+      autoplay: 1,          // ← start automatically
+      mute: 1,              // ← muted (browsers allow this)
+      controls: 0,
+      disablekb: 1,
+      fs: 0,
+      iv_load_policy: 3,
+      modestbranding: 1,
+      playsinline: 1,
+      rel: 0,
+      loop: 1,
+      playlist: YT_VIDEO_ID,
+    },
+    events: {
+      onReady: (e) => {
+        ytReady = true;
+        try { e.target.setVolume(0); } catch(_) {}
+        try { e.target.playVideo(); } catch(_) {}   // muted autoplay
+        // If the user already interacted before ready → unmute now
+        if (audioUnlocked) tryUnmute();
+      },
+      onStateChange: (e) => {
+        if (e.data === YT.PlayerState.ENDED) {
+          try { e.target.seekTo(0); e.target.playVideo(); } catch(_) {}
+        }
+      },
+    },
+  });
+};
+
+function tryUnmute() {
+  if (!ytReady || !ytPlayer) return;
+  try { ytPlayer.unMute(); } catch(_) {}
+  try { ytPlayer.setVolume(60); } catch(_) {}
+  const btn = document.getElementById('musicBtn');
+  if (btn) btn.classList.add('playing');
+  musicOn = true;
+}
+
+function startMusic() { musicOn = true; tryUnmute(); }
+
+function stopMusic() {
+  musicOn = false;
+  const btn = document.getElementById('musicBtn');
+  if (btn) btn.classList.remove('playing');
+  if (ytReady && ytPlayer) {
+    try { ytPlayer.mute(); } catch(_) {}         // stay playing but silent
+  }
+}
+
+function unlockAndStartMusic() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  tryUnmute();
+}
